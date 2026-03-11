@@ -21,7 +21,7 @@ func main() {
 	}
 	defer conn.Close()
 
-	resp := "HTTP/1.1 200 OK\\r\\n\\r\\n"
+	resp := "HTTP/1.1 200 OK\r\n\r\n"
 	if _, err := conn.Write([]byte(resp)); err != nil {
 		fmt.Println("error writing to connection", err.Error())
 	}
