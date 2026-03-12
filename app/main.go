@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -14,7 +15,7 @@ type Request struct {
 	URL     string
 	Proto   string
 	headers map[string]string
-	body    string
+	body    []string
 }
 
 func main() {
@@ -52,9 +53,10 @@ func handleConnection(conn net.Conn, dir *string) {
 
 func parseHTTPRequest(s string) Request {
 	crlf := "\r\n"
+	body := ""
 	splitReq := strings.Split(s, crlf)
 	requestLineArr := strings.Split(splitReq[0], " ")
-	body := splitReq[len(splitReq)-1]
+	bodyArr := splitReq[len(splitReq)-1]
 	headersArr := splitReq[1 : len(splitReq)-1]
 	headers := make(map[string]string)
 	for _, header := range headersArr {
@@ -66,6 +68,16 @@ func parseHTTPRequest(s string) Request {
 			headers[strings.ToLower(headerArr[0])] = strings.TrimSpace(headerArr[1])
 		}
 	}
+	contentLengthStr, exist := headers["Content-Length"]
+	if exist {
+		contentLength, err := strconv.Atoi(contentLengthStr)
+		if err != nil {
+			fmt.Println("Error parsing Content-Length: ", err.Error())
+			os.Exit(1)
+		}
+		body = bodyArr[:contentLength]
+	}
+
 	return Request{
 		Method:  requestLineArr[0],
 		URL:     requestLineArr[1],
@@ -110,7 +122,7 @@ func router(req Request, conn net.Conn, dir *string) {
 					continue
 				}
 				if file.Name() == filename {
-					file, err := os.ReadFile(*dir + filename)
+					file, err := os.ReadFile(filepath.Join(*dir, filename))
 					if err != nil {
 						fmt.Println("Error reading file: ", err.Error())
 						respondServerError(conn)
@@ -127,7 +139,7 @@ func router(req Request, conn net.Conn, dir *string) {
 			respondNotFound(conn)
 		}
 		if req.Method == "POST" {
-			if err := os.WriteFile(*dir+filename, []byte(req.body), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(*dir, filename), []byte(req.body), 0644); err != nil {
 				fmt.Println("Error writing to file: ", err.Error())
 				respondServerError(conn)
 			}
