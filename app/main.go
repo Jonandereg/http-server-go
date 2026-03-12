@@ -127,7 +127,7 @@ func router(req Request, conn net.Conn, dir *string) {
 			respondNotFound(conn)
 		}
 		if req.Method == "POST" {
-			if err := os.WriteFile(filename, []byte(req.body), 0644); err != nil {
+			if err := os.WriteFile(*dir+filename, []byte(req.body), 0644); err != nil {
 				fmt.Println("Error writing to file: ", err.Error())
 				respondServerError(conn)
 			}
