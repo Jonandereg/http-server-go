@@ -54,17 +54,17 @@ func parseHTTPRequest(s string) Request {
 
 func router(req Request, conn net.Conn) {
 	defer conn.Close()
-	switch req.URL {
-	case "/":
+	switch true {
+	case req.URL == "/":
 		if _, err := conn.Write(constructResponse(200, "OK", nil, nil)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
-	case "/echo":
-		echoStr := new(strings.Split(req.URL, "/")[1])
+	case strings.HasPrefix(req.URL, "/echo"):
+		echoStr := strings.TrimPrefix(req.URL, "/echo")
 		headers := make(map[string]string)
 		headers["Content-Type"] = "text/plain"
-		headers["Content-Length"] = strconv.Itoa(len(*echoStr))
-		if _, err := conn.Write(constructResponse(200, "OK", headers, echoStr)); err != nil {
+		headers["Content-Length"] = strconv.Itoa(len(echoStr))
+		if _, err := conn.Write(constructResponse(200, "OK", headers, &echoStr)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
 	default:
@@ -85,7 +85,7 @@ func constructResponse(status int, message string, headers map[string]string, bo
 	fullMessage += "\r\n"
 
 	if body != nil {
-		fullMessage += fmt.Sprintf(" %s", *body)
+		fullMessage += fmt.Sprintf("%s", *body)
 	}
 	return []byte(fullMessage)
 }
