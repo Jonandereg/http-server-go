@@ -29,17 +29,22 @@ func main() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		req := make([]byte, 1024)
-		if _, err := conn.Read(req); err != nil {
-			fmt.Println("Error reading request: ", err.Error())
-		}
-		fmt.Println("Request received: ", string(req))
-
-		parsedReq := parseHTTPRequest(string(req))
-
-		router(parsedReq, conn)
+		go handleConnection(conn)
 	}
 
+}
+
+func handleConnection(conn net.Conn) {
+	defer conn.Close()
+	req := make([]byte, 1024)
+	if _, err := conn.Read(req); err != nil {
+		fmt.Println("Error reading request: ", err.Error())
+	}
+	fmt.Println("Request received: ", string(req))
+
+	parsedReq := parseHTTPRequest(string(req))
+
+	router(parsedReq, conn)
 }
 
 func parseHTTPRequest(s string) Request {
