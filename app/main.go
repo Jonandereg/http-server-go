@@ -53,7 +53,7 @@ func parseHTTPRequest(s string) Request {
 			continue
 		}
 		headerArr := strings.Split(header, ":")
-		headers[strings.ToLower(headerArr[0])] = headerArr[1]
+		headers[strings.ToLower(headerArr[0])] = strings.TrimSpace(headerArr[1])
 	}
 	return Request{
 		Method:  requestLineArr[0],
