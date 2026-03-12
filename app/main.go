@@ -86,7 +86,7 @@ func parseHTTPRequest(rawReq []byte) (Request, error) {
 		headers[strings.TrimSpace(strings.ToLower(keyValue[0]))] = strings.TrimSpace(keyValue[1])
 	}
 	var body []byte
-	contentLengthStr, exist := headers["Content-Length"]
+	contentLengthStr, exist := headers["content-length"]
 	if exist {
 		contentLength, err := strconv.Atoi(contentLengthStr)
 		if err != nil {
