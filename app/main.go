@@ -106,7 +106,7 @@ func router(req Request, conn net.Conn) {
 				continue
 			}
 			if file.Name() == filename {
-				file, err := os.ReadFile(*dir)
+				file, err := os.ReadFile(filename)
 				if err != nil {
 					fmt.Println("Error reading file: ", err.Error())
 					respondServerError(conn)
