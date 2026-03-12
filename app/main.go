@@ -15,7 +15,7 @@ type Request struct {
 	URL     string
 	Proto   string
 	headers map[string]string
-	body    []string
+	body    string
 }
 
 func main() {
