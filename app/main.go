@@ -9,9 +9,10 @@ import (
 )
 
 type Request struct {
-	Method string
-	URL    string
-	Proto  string
+	Method  string
+	URL     string
+	Proto   string
+	headers map[string]string
 }
 
 func main() {
@@ -45,15 +46,26 @@ func parseHTTPRequest(s string) Request {
 	crlf := "\r\n"
 	splitReq := strings.Split(s, crlf)
 	requestLineArr := strings.Split(splitReq[0], " ")
+	headersArr := splitReq[1:]
+	headers := make(map[string]string)
+	for _, header := range headersArr {
+		if header == "" {
+			continue
+		}
+		headerArr := strings.Split(header, ":")
+		headers[strings.ToLower(headerArr[0])] = headerArr[1]
+	}
 	return Request{
-		Method: requestLineArr[0],
-		URL:    requestLineArr[1],
-		Proto:  requestLineArr[2],
+		Method:  requestLineArr[0],
+		URL:     requestLineArr[1],
+		Proto:   requestLineArr[2],
+		headers: headers,
 	}
 }
 
 func router(req Request, conn net.Conn) {
 	defer conn.Close()
+	headers := make(map[string]string)
 	switch true {
 	case req.URL == "/":
 		if _, err := conn.Write(constructResponse(200, "OK", nil, nil)); err != nil {
@@ -61,10 +73,16 @@ func router(req Request, conn net.Conn) {
 		}
 	case strings.HasPrefix(req.URL, "/echo"):
 		echoStr := strings.TrimPrefix(req.URL, "/echo/")
-		headers := make(map[string]string)
 		headers["Content-Type"] = "text/plain"
 		headers["Content-Length"] = strconv.Itoa(len(echoStr))
 		if _, err := conn.Write(constructResponse(200, "OK", headers, &echoStr)); err != nil {
+			fmt.Println("error writing to connection", err.Error())
+		}
+	case req.URL == "/user-agent":
+		headers["Content-Type"] = "text/plain"
+		userAgent := req.headers["user-agent"]
+		headers["Content-Length"] = strconv.Itoa(len(userAgent))
+		if _, err := conn.Write(constructResponse(200, "OK", headers, &userAgent)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
 	default:
