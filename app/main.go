@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,7 +18,7 @@ type Request struct {
 	URL     string
 	Proto   string
 	headers map[string]string
-	body    string
+	body    []byte
 }
 
 func main() {
@@ -27,6 +30,7 @@ func main() {
 	fmt.Println("Listening on 0.0.0.0:4221")
 	dir := flag.String("directory", ".", "directory to serve")
 	flag.Parse()
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -46,28 +50,42 @@ func handleConnection(conn net.Conn, dir *string) {
 	}
 	fmt.Println("Request received: ", string(req))
 
-	parsedReq := parseHTTPRequest(string(req))
+	parsedReq, err := parseHTTPRequest(req)
+	if err != nil {
+		fmt.Println("Error parsing request: ", err.Error())
+		respondServerError(conn)
+	}
 
 	router(parsedReq, conn, dir)
 }
 
-func parseHTTPRequest(s string) Request {
-	crlf := "\r\n"
-	body := ""
-	splitReq := strings.Split(s, crlf)
-	requestLineArr := strings.Split(splitReq[0], " ")
-	bodyArr := splitReq[len(splitReq)-1]
-	headersArr := splitReq[1 : len(splitReq)-1]
-	headers := make(map[string]string)
-	for _, header := range headersArr {
-		if header == "" {
-			continue
-		}
-		headerArr := strings.Split(header, ":")
-		if len(headerArr) == 2 {
-			headers[strings.ToLower(headerArr[0])] = strings.TrimSpace(headerArr[1])
-		}
+func parseHTTPRequest(rawReq []byte) (Request, error) {
+	r := bufio.NewReader(bytes.NewReader(rawReq))
+
+	requestLine, err := r.ReadString('\n')
+	if err != nil {
+		return Request{}, fmt.Errorf("error reading request: %q", err.Error())
+
 	}
+	requestLineArr := strings.Split(strings.Trim(requestLine, "\r\n"), " ")
+
+	headers := make(map[string]string)
+	for {
+		line, err := r.ReadString('\n')
+		if err != nil {
+			return Request{}, fmt.Errorf("error reading request: %q", err.Error())
+		}
+		if line == "\r\n" {
+			break
+		}
+		trimmedLine := strings.Trim(line, "\r\n")
+		keyValue := strings.Split(trimmedLine, ":")
+		if len(keyValue) != 2 {
+			return Request{}, fmt.Errorf("error parsing request: %q", trimmedLine)
+		}
+		headers[strings.TrimSpace(keyValue[0])] = strings.TrimSpace(keyValue[1])
+	}
+	var body []byte
 	contentLengthStr, exist := headers["Content-Length"]
 	if exist {
 		contentLength, err := strconv.Atoi(contentLengthStr)
@@ -75,7 +93,10 @@ func parseHTTPRequest(s string) Request {
 			fmt.Println("Error parsing Content-Length: ", err.Error())
 			os.Exit(1)
 		}
-		body = bodyArr[:contentLength]
+		body = make([]byte, contentLength)
+		if _, err := io.ReadFull(r, body); err != nil {
+			return Request{}, fmt.Errorf("error reading request body: %q", err.Error())
+		}
 	}
 
 	return Request{
@@ -84,7 +105,7 @@ func parseHTTPRequest(s string) Request {
 		Proto:   requestLineArr[2],
 		headers: headers,
 		body:    body,
-	}
+	}, nil
 }
 
 func router(req Request, conn net.Conn, dir *string) {
