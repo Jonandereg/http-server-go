@@ -81,7 +81,7 @@ func parseHTTPRequest(rawReq []byte) (Request, error) {
 		trimmedLine := strings.Trim(line, "\r\n")
 		keyValue := strings.Split(trimmedLine, ":")
 		if len(keyValue) != 2 {
-			return Request{}, fmt.Errorf("error parsing request: %q", trimmedLine)
+			continue
 		}
 		headers[strings.TrimSpace(keyValue[0])] = strings.TrimSpace(keyValue[1])
 	}
