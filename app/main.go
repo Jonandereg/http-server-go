@@ -60,7 +60,7 @@ func router(req Request, conn net.Conn) {
 			fmt.Println("error writing to connection", err.Error())
 		}
 	case strings.HasPrefix(req.URL, "/echo"):
-		echoStr := strings.TrimPrefix(req.URL, "/echo")
+		echoStr := strings.TrimPrefix(req.URL, "/echo/")
 		headers := make(map[string]string)
 		headers["Content-Type"] = "text/plain"
 		headers["Content-Length"] = strconv.Itoa(len(echoStr))
