@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -34,18 +35,8 @@ func main() {
 		fmt.Println("Request received: ", string(req))
 
 		parsedReq := parseHTTPRequest(string(req))
-		if parsedReq.URL == "/" {
-			if _, err := conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n")); err != nil {
-				fmt.Println("error writing to connection", err.Error())
-			}
 
-		} else {
-			if _, err := conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n")); err != nil {
-				fmt.Println("error writing to connection", err.Error())
-			}
-		}
-
-		conn.Close()
+		router(parsedReq, conn)
 	}
 
 }
@@ -59,4 +50,42 @@ func parseHTTPRequest(s string) Request {
 		URL:    requestLineArr[1],
 		Proto:  requestLineArr[2],
 	}
+}
+
+func router(req Request, conn net.Conn) {
+	defer conn.Close()
+	switch req.URL {
+	case "/":
+		if _, err := conn.Write(constructResponse(200, "OK", nil, nil)); err != nil {
+			fmt.Println("error writing to connection", err.Error())
+		}
+	case "/echo":
+		echoStr := new(strings.Split(req.URL, "/")[1])
+		headers := make(map[string]string)
+		headers["Content-Type"] = "text/plain"
+		headers["Content-Length"] = strconv.Itoa(len(*echoStr))
+		if _, err := conn.Write(constructResponse(200, "OK", headers, echoStr)); err != nil {
+			fmt.Println("error writing to connection", err.Error())
+		}
+	default:
+		if _, err := conn.Write(constructResponse(404, "Not Found", nil, nil)); err != nil {
+			fmt.Println("error writing to connection", err.Error())
+		}
+
+	}
+}
+
+func constructResponse(status int, message string, headers map[string]string, body *string) []byte {
+	statusLine := fmt.Sprintf("HTTP/1.1 %d %s\r\n", status, message)
+	fullMessage := statusLine
+
+	for k, v := range headers {
+		fullMessage += fmt.Sprintf("%s: %s\r\n", k, v)
+	}
+	fullMessage += "\r\n"
+
+	if body != nil {
+		fullMessage += fmt.Sprintf(" %s", *body)
+	}
+	return []byte(fullMessage)
 }
