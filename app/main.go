@@ -131,7 +131,7 @@ func router(req Request, conn net.Conn, dir *string) {
 				fmt.Println("Error writing to file: ", err.Error())
 				respondServerError(conn)
 			}
-			if _, err := conn.Write(constructResponse(201, "CREATED", nil, nil)); err != nil {
+			if _, err := conn.Write(constructResponse(201, "Created", nil, nil)); err != nil {
 				fmt.Println("error writing to connection", err.Error())
 			}
 		}
