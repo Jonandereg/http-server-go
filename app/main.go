@@ -83,7 +83,7 @@ func parseHTTPRequest(rawReq []byte) (Request, error) {
 		if len(keyValue) != 2 {
 			continue
 		}
-		headers[strings.TrimSpace(keyValue[0])] = strings.TrimSpace(keyValue[1])
+		headers[strings.TrimSpace(strings.ToLower(keyValue[0]))] = strings.TrimSpace(keyValue[1])
 	}
 	var body []byte
 	contentLengthStr, exist := headers["Content-Length"]
