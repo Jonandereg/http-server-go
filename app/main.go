@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -16,7 +17,6 @@ type Request struct {
 }
 
 func main() {
-
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
@@ -92,11 +92,38 @@ func router(req Request, conn net.Conn) {
 		if _, err := conn.Write(constructResponse(200, "OK", headers, &userAgent)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
-	default:
-		if _, err := conn.Write(constructResponse(404, "Not Found", nil, nil)); err != nil {
-			fmt.Println("error writing to connection", err.Error())
-		}
+	case strings.HasPrefix(req.URL, "/files"):
+		dir := flag.String("dir", ".", "directory to serve")
+		flag.Parse()
+		filename := strings.TrimPrefix(req.URL, "/files/")
+		if strings.Contains(*dir, filename) {
+			file, err := os.ReadFile(*dir)
+			if err != nil {
+				fmt.Println("Error reading directory: ", err.Error())
+				respondServerError(conn)
+			}
+			headers["Content-Type"] = "application/octet-stream"
+			headers["Content-Length"] = strconv.Itoa(len(file))
+			if _, err := conn.Write(constructResponse(200, "OK", headers, new(string(file)))); err != nil {
+				fmt.Println("error writing to connection", err.Error())
+			}
 
+		}
+		respondNotFound(conn)
+
+	default:
+		respondNotFound(conn)
+	}
+}
+
+func respondNotFound(conn net.Conn) {
+	if _, err := conn.Write(constructResponse(404, "Not Found", nil, nil)); err != nil {
+		fmt.Println("error writing to connection", err.Error())
+	}
+}
+
+func respondServerError(conn net.Conn) {
+	if _, err := conn.Write(constructResponse(500, "Internal Server Error", nil, nil)); err != nil {
 	}
 }
 
