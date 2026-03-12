@@ -102,6 +102,9 @@ func router(req Request, conn net.Conn) {
 			respondServerError(conn)
 		}
 		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
 			if file.Name() == filename {
 				file, err := os.ReadFile(*dir)
 				if err != nil {
