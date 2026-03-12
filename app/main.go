@@ -23,18 +23,20 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println("Listening on 0.0.0.0:4221")
+	dir := flag.String("directory", ".", "directory to serve")
+	flag.Parse()
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, dir)
 	}
 
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, dir *string) {
 	defer conn.Close()
 	req := make([]byte, 1024)
 	if _, err := conn.Read(req); err != nil {
@@ -44,7 +46,7 @@ func handleConnection(conn net.Conn) {
 
 	parsedReq := parseHTTPRequest(string(req))
 
-	router(parsedReq, conn)
+	router(parsedReq, conn, dir)
 }
 
 func parseHTTPRequest(s string) Request {
@@ -70,7 +72,7 @@ func parseHTTPRequest(s string) Request {
 	}
 }
 
-func router(req Request, conn net.Conn) {
+func router(req Request, conn net.Conn, dir *string) {
 	defer conn.Close()
 	headers := make(map[string]string)
 	switch true {
@@ -93,8 +95,7 @@ func router(req Request, conn net.Conn) {
 			fmt.Println("error writing to connection", err.Error())
 		}
 	case strings.HasPrefix(req.URL, "/files"):
-		dir := flag.String("directory", ".", "directory to serve")
-		flag.Parse()
+
 		filename := strings.TrimPrefix(req.URL, "/files/")
 		files, err := os.ReadDir(*dir)
 		if err != nil {
