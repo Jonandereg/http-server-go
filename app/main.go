@@ -105,7 +105,7 @@ func router(req Request, conn net.Conn) {
 			if file.Name() == filename {
 				file, err := os.ReadFile(*dir)
 				if err != nil {
-					fmt.Println("Error reading directory: ", err.Error())
+					fmt.Println("Error reading file: ", err.Error())
 					respondServerError(conn)
 				}
 				headers["Content-Type"] = "application/octet-stream"
