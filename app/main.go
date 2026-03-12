@@ -93,7 +93,7 @@ func router(req Request, conn net.Conn) {
 			fmt.Println("error writing to connection", err.Error())
 		}
 	case strings.HasPrefix(req.URL, "/files"):
-		dir := flag.String("dir", ".", "directory to serve")
+		dir := flag.String("directory", ".", "directory to serve")
 		flag.Parse()
 		filename := strings.TrimPrefix(req.URL, "/files/")
 		if strings.Contains(*dir, filename) {
