@@ -14,6 +14,7 @@ type Request struct {
 	URL     string
 	Proto   string
 	headers map[string]string
+	body    string
 }
 
 func main() {
@@ -53,7 +54,8 @@ func parseHTTPRequest(s string) Request {
 	crlf := "\r\n"
 	splitReq := strings.Split(s, crlf)
 	requestLineArr := strings.Split(splitReq[0], " ")
-	headersArr := splitReq[1:]
+	body := splitReq[len(splitReq)-1]
+	headersArr := splitReq[1 : len(splitReq)-1]
 	headers := make(map[string]string)
 	for _, header := range headersArr {
 		if header == "" {
@@ -69,6 +71,7 @@ func parseHTTPRequest(s string) Request {
 		URL:     requestLineArr[1],
 		Proto:   requestLineArr[2],
 		headers: headers,
+		body:    body,
 	}
 }
 
@@ -95,33 +98,43 @@ func router(req Request, conn net.Conn, dir *string) {
 			fmt.Println("error writing to connection", err.Error())
 		}
 	case strings.HasPrefix(req.URL, "/files"):
-
 		filename := strings.TrimPrefix(req.URL, "/files/")
-		files, err := os.ReadDir(*dir)
-		if err != nil {
-			fmt.Println("Error reading directory: ", err.Error())
-			respondServerError(conn)
-		}
-		for _, file := range files {
-			if file.IsDir() {
-				continue
+		if req.Method == "GET" {
+			files, err := os.ReadDir(*dir)
+			if err != nil {
+				fmt.Println("Error reading directory: ", err.Error())
+				respondServerError(conn)
 			}
-			if file.Name() == filename {
+			for _, file := range files {
+				if file.IsDir() {
+					continue
+				}
+				if file.Name() == filename {
+					file, err := os.ReadFile(*dir + filename)
+					if err != nil {
+						fmt.Println("Error reading file: ", err.Error())
+						respondServerError(conn)
+					}
+					headers["Content-Type"] = "application/octet-stream"
+					headers["Content-Length"] = strconv.Itoa(len(file))
+					if _, err := conn.Write(constructResponse(200, "OK", headers, new(string(file)))); err != nil {
+						fmt.Println("error writing to connection", err.Error())
+					}
+				}
 
-				file, err := os.ReadFile(*dir + filename)
-				if err != nil {
-					fmt.Println("Error reading file: ", err.Error())
-					respondServerError(conn)
-				}
-				headers["Content-Type"] = "application/octet-stream"
-				headers["Content-Length"] = strconv.Itoa(len(file))
-				if _, err := conn.Write(constructResponse(200, "OK", headers, new(string(file)))); err != nil {
-					fmt.Println("error writing to connection", err.Error())
-				}
+			}
+
+			respondNotFound(conn)
+		}
+		if req.Method == "POST" {
+			if err := os.WriteFile(filename, []byte(req.body), 0644); err != nil {
+				fmt.Println("Error writing to file: ", err.Error())
+				respondServerError(conn)
+			}
+			if _, err := conn.Write(constructResponse(201, "CREATED", nil, nil)); err != nil {
+				fmt.Println("error writing to connection", err.Error())
 			}
 		}
-
-		respondNotFound(conn)
 
 	default:
 		respondNotFound(conn)
