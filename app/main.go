@@ -125,7 +125,6 @@ func router(req Request, conn net.Conn, dir *string) {
 	case strings.HasPrefix(req.URL, "/echo"):
 		echoStr := strings.TrimPrefix(req.URL, "/echo/")
 		headers["Content-Type"] = "text/plain"
-		headers["Content-Length"] = strconv.Itoa(len(echoStr))
 		encoding := detectEncoding(req.headers)
 		if encoding != "" {
 			headers["Content-Encoding"] = encoding
@@ -136,6 +135,7 @@ func router(req Request, conn net.Conn, dir *string) {
 			}
 			echoStr = string(body)
 		}
+		headers["Content-Length"] = strconv.Itoa(len(echoStr))
 		if _, err := conn.Write(constructResponse(200, "OK", headers, &echoStr)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
