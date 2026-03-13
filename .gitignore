@@ -1,0 +1,12 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+http-server
+/tmp/codecrafters-build-*
+
+# OS
+.DS_Store
