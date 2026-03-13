@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -127,6 +129,12 @@ func router(req Request, conn net.Conn, dir *string) {
 		encoding := detectEncoding(req.headers)
 		if encoding != "" {
 			headers["Content-Encoding"] = encoding
+			body, err := compressBody([]byte(echoStr), encoding)
+			if err != nil {
+				fmt.Println("error compressing body:", err.Error())
+				respondServerError(conn)
+			}
+			echoStr = string(body)
 		}
 		if _, err := conn.Write(constructResponse(200, "OK", headers, &echoStr)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
@@ -223,4 +231,19 @@ func detectEncoding(headers map[string]string) string {
 
 	}
 	return encoding
+}
+
+func compressBody(body []byte, compressionType string) ([]byte, error) {
+	switch compressionType {
+	case "gzip":
+		var buf bytes.Buffer
+		gz := gzip.NewWriter(&buf)
+		defer gz.Close()
+		if _, err := gz.Write(body); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+	default:
+		return nil, errors.New("unsupported compression type: " + compressionType)
+	}
 }
