@@ -50,19 +50,21 @@ func main() {
 
 func handleConnection(conn net.Conn, dir *string) {
 	defer conn.Close()
-	req := make([]byte, 1024)
-	if _, err := conn.Read(req); err != nil {
-		fmt.Println("Error reading request: ", err.Error())
-	}
-	fmt.Println("Request received: ", string(req))
+	for {
+		req := make([]byte, 1024)
+		if _, err := conn.Read(req); err != nil {
+			fmt.Println("Error reading request: ", err.Error())
+		}
+		fmt.Println("Request received: ", string(req))
 
-	parsedReq, err := parseHTTPRequest(req)
-	if err != nil {
-		fmt.Println("Error parsing request: ", err.Error())
-		respondServerError(conn)
-	}
+		parsedReq, err := parseHTTPRequest(req)
+		if err != nil {
+			fmt.Println("Error parsing request: ", err.Error())
+			respondServerError(conn)
+		}
 
-	router(parsedReq, conn, dir)
+		router(parsedReq, conn, dir)
+	}
 }
 
 func parseHTTPRequest(rawReq []byte) (Request, error) {
