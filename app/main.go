@@ -206,7 +206,7 @@ func constructResponse(status int, message string, headers map[string]string, bo
 
 func detectEncoding(headers map[string]string) string {
 	encoding := ""
-	clientEncoding, exists := headers["Accept-Encoding"]
+	clientEncoding, exists := headers["accept-encoding"]
 	if exists {
 		encoding = clientEncoding
 	}
