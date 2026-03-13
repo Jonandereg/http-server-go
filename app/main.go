@@ -127,6 +127,10 @@ func router(req Request, conn net.Conn, dir *string) {
 		headers["Content-Type"] = "text/plain"
 		userAgent := req.headers["user-agent"]
 		headers["Content-Length"] = strconv.Itoa(len(userAgent))
+		enconding := detectEncoding(req.headers)
+		if enconding != "" {
+			headers["Content-Encoding"] = enconding
+		}
 		if _, err := conn.Write(constructResponse(200, "OK", headers, &userAgent)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
@@ -198,4 +202,13 @@ func constructResponse(status int, message string, headers map[string]string, bo
 		fullMessage += fmt.Sprintf("%s", *body)
 	}
 	return []byte(fullMessage)
+}
+
+func detectEncoding(headers map[string]string) string {
+	encoding := ""
+	clientEncoding, exists := headers["Accept-Encoding"]
+	if exists {
+		encoding = clientEncoding
+	}
+	return encoding
 }
