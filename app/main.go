@@ -53,7 +53,11 @@ func handleConnection(conn net.Conn, dir *string) {
 	for {
 		req := make([]byte, 1024)
 		if _, err := conn.Read(req); err != nil {
-			fmt.Println("Error reading request: ", err.Error())
+			if err != io.EOF {
+				fmt.Println("Error reading request: ", err.Error())
+				respondServerError(conn)
+			}
+			return
 		}
 		fmt.Println("Request received: ", string(req))
 
