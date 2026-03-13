@@ -233,16 +233,22 @@ func detectEncoding(headers map[string]string) string {
 	return encoding
 }
 
-func compressBody(body []byte, compressionType string) ([]byte, error) {
+func compressBody(body []byte, compressionType string) (out []byte, err error) {
 	switch compressionType {
 	case "gzip":
 		var buf bytes.Buffer
 		gz := gzip.NewWriter(&buf)
-		defer gz.Close()
+		defer func() {
+			if cErr := gz.Close(); cErr != nil && err == nil {
+				err = errors.New("Error closing gzip writer: " + err.Error())
+			}
+			out = buf.Bytes()
+		}()
 		if _, err := gz.Write(body); err != nil {
+
 			return nil, err
 		}
-		return buf.Bytes(), nil
+		return
 	default:
 		return nil, errors.New("unsupported compression type: " + compressionType)
 	}
