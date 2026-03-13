@@ -49,7 +49,6 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, dir *string) {
-	defer conn.Close()
 	for {
 		req := make([]byte, 1024)
 		if _, err := conn.Read(req); err != nil {
@@ -67,7 +66,10 @@ func handleConnection(conn net.Conn, dir *string) {
 			respondServerError(conn)
 		}
 
-		router(parsedReq, conn, dir)
+		shouldClose := router(parsedReq, conn, dir)
+		if shouldClose {
+			conn.Close()
+		}
 	}
 }
 
@@ -120,12 +122,13 @@ func parseHTTPRequest(rawReq []byte) (Request, error) {
 	}, nil
 }
 
-func router(req Request, conn net.Conn, dir *string) {
+func router(req Request, conn net.Conn, dir *string) bool {
 	headers := make(map[string]string)
 	closeConnection, exists := req.headers["connection"]
+	var shouldClose bool
 	if exists && closeConnection == "close" {
 		headers["Connection"] = "close"
-		defer conn.Close()
+		shouldClose = true
 	}
 
 	switch {
@@ -199,7 +202,7 @@ func router(req Request, conn net.Conn, dir *string) {
 	default:
 		respondNotFound(conn)
 	}
-	return
+	return shouldClose
 }
 
 func respondNotFound(conn net.Conn) {
