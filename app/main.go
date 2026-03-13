@@ -21,6 +21,10 @@ type Request struct {
 	body    []byte
 }
 
+var supportedEncodings = map[string]bool{
+	"gzip": true,
+}
+
 func main() {
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
@@ -207,7 +211,7 @@ func constructResponse(status int, message string, headers map[string]string, bo
 func detectEncoding(headers map[string]string) string {
 	encoding := ""
 	clientEncoding, exists := headers["accept-encoding"]
-	if exists {
+	if exists && supportedEncodings[clientEncoding] {
 		encoding = clientEncoding
 	}
 	return encoding
