@@ -117,7 +117,6 @@ func parseHTTPRequest(rawReq []byte) (Request, error) {
 }
 
 func router(req Request, conn net.Conn, dir *string) {
-	defer conn.Close()
 	headers := make(map[string]string)
 	switch true {
 	case req.URL == "/":
