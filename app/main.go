@@ -214,7 +214,7 @@ func detectEncoding(headers map[string]string) string {
 	if !exists {
 		return encoding
 	}
-	clientEncodings := strings.Split(clientEncodingsStr, ",")
+	clientEncodings := strings.Split(clientEncodingsStr, ", ")
 	for _, clientEncoding := range clientEncodings {
 		if supportedEncodings[clientEncoding] {
 			encoding = clientEncoding
