@@ -210,9 +210,17 @@ func constructResponse(status int, message string, headers map[string]string, bo
 
 func detectEncoding(headers map[string]string) string {
 	encoding := ""
-	clientEncoding, exists := headers["accept-encoding"]
-	if exists && supportedEncodings[clientEncoding] {
-		encoding = clientEncoding
+	clientEncodingsStr, exists := headers["accept-encoding"]
+	if !exists {
+		return encoding
+	}
+	clientEncodings := strings.Split(clientEncodingsStr, ",")
+	for _, clientEncoding := range clientEncodings {
+		if supportedEncodings[clientEncoding] {
+			encoding = clientEncoding
+			break
+		}
+
 	}
 	return encoding
 }
