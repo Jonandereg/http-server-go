@@ -49,6 +49,7 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, dir *string) {
+	defer conn.Close()
 	for {
 		req := make([]byte, 1024)
 		if _, err := conn.Read(req); err != nil {
@@ -68,7 +69,7 @@ func handleConnection(conn net.Conn, dir *string) {
 
 		shouldClose := router(parsedReq, conn, dir)
 		if shouldClose {
-			conn.Close()
+			return
 		}
 	}
 }
