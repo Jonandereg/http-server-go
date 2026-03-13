@@ -122,7 +122,13 @@ func parseHTTPRequest(rawReq []byte) (Request, error) {
 
 func router(req Request, conn net.Conn, dir *string) {
 	headers := make(map[string]string)
-	switch true {
+	closeConnection, exists := req.headers["connection"]
+	if exists && closeConnection == "close" {
+		headers["Connection"] = "close"
+		defer conn.Close()
+	}
+
+	switch {
 	case req.URL == "/":
 		if _, err := conn.Write(constructResponse(200, "OK", nil, nil)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
