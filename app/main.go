@@ -189,6 +189,7 @@ func router(req Request, conn net.Conn, dir *string) {
 	default:
 		respondNotFound(conn)
 	}
+	return
 }
 
 func respondNotFound(conn net.Conn) {
