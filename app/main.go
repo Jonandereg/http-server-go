@@ -120,6 +120,10 @@ func router(req Request, conn net.Conn, dir *string) {
 		echoStr := strings.TrimPrefix(req.URL, "/echo/")
 		headers["Content-Type"] = "text/plain"
 		headers["Content-Length"] = strconv.Itoa(len(echoStr))
+		encoding := detectEncoding(req.headers)
+		if encoding != "" {
+			headers["Content-Encoding"] = encoding
+		}
 		if _, err := conn.Write(constructResponse(200, "OK", headers, &echoStr)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
@@ -127,10 +131,6 @@ func router(req Request, conn net.Conn, dir *string) {
 		headers["Content-Type"] = "text/plain"
 		userAgent := req.headers["user-agent"]
 		headers["Content-Length"] = strconv.Itoa(len(userAgent))
-		enconding := detectEncoding(req.headers)
-		if enconding != "" {
-			headers["Content-Encoding"] = enconding
-		}
 		if _, err := conn.Write(constructResponse(200, "OK", headers, &userAgent)); err != nil {
 			fmt.Println("error writing to connection", err.Error())
 		}
